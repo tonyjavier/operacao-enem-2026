@@ -7,7 +7,7 @@ PWA responsiva para consultar o cronograma do Enem 2026, abrir aulas e materiais
 - Interface React + TypeScript + Vite; PWA instalável para celular e desktop.
 - Backend no projeto Supabase **`operacao-enem-2026`**; conteúdo inicial importado e progresso isolado por RLS.
 - **Sem persistência local de dados de estudo**. O navegador mantém somente a sessão gerenciada pelo Supabase Auth; o service worker pré-armazena apenas arquivos estáticos. A gravação exige conexão.
-- O app está disponível em preview do Sandbox. **Ainda não foi publicado em produção nem vinculado a um repositório Vercel.**
+- Publicado em produção na Netlify em [operacao-enem-2026.netlify.app](https://operacao-enem-2026.netlify.app), conectado ao repositório público [tonyjavier/operacao-enem-2026](https://github.com/tonyjavier/operacao-enem-2026); a branch `main` publica automaticamente.
 
 ## Executar localmente
 
@@ -25,11 +25,13 @@ As migrations em `supabase/migrations/` definem tabelas de conteúdo, contas/pro
 
 A identidade proprietária é obtida por `auth.uid()`; não aceite `user_id` de formulários como fonte de autoridade. Não desative RLS. O bucket `error-attachments` é privado e aceita JPEG, PNG e WebP até 10 MB.
 
-Para executar Supabase Auth em outro domínio, ajuste no Dashboard do **projeto novo**: Auth → URL Configuration. Defina o Site URL da instalação e inclua os domínios de preview/desenvolvimento e a rota `/reset-password` na lista de Redirect URLs. Configure e teste o email de confirmação/recuperação antes de convidar estudantes.
+No projeto Supabase de produção, o Site URL está definido como `https://operacao-enem-2026.netlify.app` e a allowlist contém somente `https://operacao-enem-2026.netlify.app/` e `https://operacao-enem-2026.netlify.app/reset-password`.
 
-## Deploy de preview na Vercel
+O SMTP personalizado está desativado. O SMTP padrão do Supabase só envia para endereços autorizados da equipe do projeto; para permitir cadastro de outros endereços, será necessário escolher e configurar um provedor SMTP próprio. Até isso ser feito, o fluxo completo de confirmação/recuperação e o teste com duas contas não estão validados.
 
-Configuração de build preparada: framework Vite, comando `pnpm build`, saída `dist`; o `vercel.json` fornece fallback SPA. No momento não há projeto Vercel para este app nem repositório conectado. Para criar a Preview, vincule um repositório Git privado ao projeto Vercel (via integração Git autorizada) e configure as duas variáveis públicas `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no ambiente Preview. Atualize então os Redirect URLs do Supabase para o hostname gerado. Produção permanece pendente de revisão do usuário.
+## Deploy de produção na Netlify
+
+O site está conectado ao repositório GitHub acima. A branch `main` é publicada automaticamente; comando de build `pnpm run build`, diretório publicado `dist` e fallback SPA em `public/_redirects`. As variáveis públicas `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` estão configuradas no ambiente Netlify; nunca adicione `service_role` ao frontend. A publicação Production atual está pronta no endereço acima.
 
 ## Decisões de UX
 
