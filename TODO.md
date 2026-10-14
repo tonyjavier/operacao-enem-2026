@@ -20,7 +20,7 @@
 - [x] Detectar a data no fuso `America/Cuiaba`; exibir datas `dd/mm/aaaa`, dia da semana, foco e contagem para as provas de 08/11 e 15/11. Se a data estiver fora da faixa, mostrar a data programada mais próxima e explicação clara.
 - [x] Mostrar tarefas do dia em sequência prática, sem agenda pessoal de trabalho/curso/almoço/noite. Quando houver questões previstas, a primeira ação principal é o botão **Fazer questões**, que abre o Hospital Questiona sem revelar a URL.
 - [x] Mostrar aula Assaad/vídeo de Redação previsto e seu microtreino com botões **Assistir aula**/**Assistir vídeo**, abrindo YouTube externamente. Não incorporar player nem expor endereços.
-- [x] Permitir registrar questões novas e refeitas separadamente, correção, tarefa marcada e erro importante; salvar imediatamente no Supabase e atualizar a tela pela resposta do backend. Sem dados fictícios, nota prevista ou contadores calculados por suposição.
+- [x] Manter **Fazer questões** como atalho e permitir marcar a tarefa como concluída; retirar da tela Hoje o formulário de contagem/registro de questões, conforme pedido de simplificação. Erros continuam registráveis no caderno de erros. Não apagar linhas antigas de `user_question_sessions`.
 - [x] Tratar dias de revisão e prova com cartões e conteúdo próprios, sem sugerir aulas longas em 06/11–08/11 e sem alterar as instruções do PDF.
 
 ## Cronograma: calendário e detalhe de data
@@ -33,21 +33,21 @@
 
 - [x] Mostrar as 32 aulas Assaad da planilha; distinguir as 28 programadas e as quatro extras. Manter número, título, disciplina, prioridade, duração, data prevista, disponibilidade e link direto quando fornecidos.
 - [x] Aula 24 com estado de vídeo indisponível e título/duração pendentes (não preencher com dado inventado). Outras aulas indisponíveis também devem explicar por que não podem ser abertas.
-- [x] Busca e filtros por origem, disciplina e situação. Botões de vídeo abrem o URL no YouTube sem exibir o link. Após voltar, permitir marcar em andamento/concluída, registrar tempo/ponto retomável manual e anotação no Supabase; registrar questões posteriores em separado.
+- [x] Busca e filtros por origem, disciplina e situação. Botões de vídeo abrem o URL no YouTube sem exibir o link. Após voltar, permitir marcar em andamento/concluída, registrar tempo/ponto retomável manual e anotação no Supabase.
 - [x] Mostrar os 10 vídeos de Redação em ordem, usando as URLs exatas fornecidas pelo usuário, com título, duração, data e tarefa prática do JSON. Sem pontuação automática.
 
 ## Redação, materiais, caderno de erros e conta
 
-- [x] Aba Redação com trilha de 10 vídeos, microtreinos previstos, contador de produções completas marcado pelo usuário e meta de cinco textos até 07/11, sendo pelo menos um cronometrado. Ficha pode registrar data, tema, tempo, tese, dificuldades, argumentação, coesão, linguagem, intervenção, reescrita e notas de competência apenas se digitadas pelo usuário.
+- [x] Aba Redação com trilha dos 10 vídeos e tarefas, microtreinos recolhidos até serem solicitados, meta informativa de cinco redações completas até 07/11 e cronômetro independente de 80–90 min. Conforme pedido de simplificação, não exibir contador, ficha ou lista de produções; manter sem alterações os registros antigos em `user_essay_entries`.
 - [x] Materiais e referências como cartões com botão verbal para abrir. Hospital Questiona apenas abre o destino; Super Aulas/Redação na Prática, Padrões de Matemática, Palavras-chave, Humanas e complementar conforme as regras da fonte. Aula de Humanas e vídeo complementar continuam PENDENTES onde aplicável. PreparaENEM fica identificado como material para uso na escola, sem link.
 - [x] Caderno de erros com disciplina, assunto, texto/foto opcional, tipo, correção em uma frase, data sugerida de revisão conforme a regra da fonte, e marcação de revisão salva no Supabase.
-- [x] Progresso pessoal: cada estudante vê o status das próprias tarefas, aulas, vídeos e produções nas telas correspondentes; a conta é identificada no menu e pode encerrar a sessão. Não oferecer exportação/backup local de dados.
+- [x] Progresso pessoal: cada estudante vê o status das próprias tarefas, aulas, vídeos e erros; a conta é identificada no menu e pode encerrar a sessão. Produções antigas não são exibidas pela interface. Não oferecer exportação/backup local de dados.
 
 ## UI responsiva, PWA e entrega
 
 - [x] Design preto e branco minimalista, banner preto abstrato na tela Hoje, cartões arredondados de 20–24 px, superfícies brancas, sombras discretas, tipografia legível e ícones SVG de linha. Sem fotos genéricas, URLs à mostra, ícones emoji ou rotinas pessoais.
-- [x] Mobile: cinco destinos na navegação inferior. Desktop: barra lateral com os mesmos destinos. Formulários, botões, estados loading/vazio/erro/offline, contraste WCAG AA, foco visível, alvos ≥44 px e redução de movimento respeitada.
-- [x] PWA instalável com manifest e ícones. Service worker pode armazenar somente assets estáticos; deve excluir Auth, API, conteúdo do cronograma e progresso pessoal.
+- [x] Mobile: cinco destinos na navegação inferior. Desktop: barra lateral com os mesmos destinos e animação discreta de entrada/abertura; movimento reduzido é respeitado. Manter formulários restantes, botões, estados loading/vazio/erro/offline, contraste WCAG AA, foco visível e alvos ≥44 px.
+- [x] PWA instalável com manifest e ícones; botão **Instalar app** aparece no login e na sidebar. Usa o prompt nativo quando disponível e instruções de “Adicionar à Tela de Início” no iPhone. Service worker pode armazenar somente assets estáticos; deve excluir Auth, API, conteúdo do cronograma e progresso pessoal.
 - [x] Executar build e verificações estáticas; validar layout em 375 px, tablet e desktop; corrigir defeitos encontrados.
 - [x] Publicar em Production na Netlify, conectada ao repositório GitHub `tonyjavier/operacao-enem-2026`; `main` publica automaticamente com `pnpm run build` e `dist`, fallback SPA e variáveis públicas `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`.
 - [x] Configurar Supabase Auth com Site URL `https://operacao-enem-2026.netlify.app` e redirects exatos `https://operacao-enem-2026.netlify.app/` e `https://operacao-enem-2026.netlify.app/reset-password`, preservando segurança sem wildcards.

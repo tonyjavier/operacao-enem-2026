@@ -16,7 +16,7 @@ Pessoas que estudam para o Enem 2026 e querem acompanhar o cronograma e o que co
 
 ## Product Purpose
 
-Transformar o cronograma Operação ENEM 2026 em uma visão diária prática e em uma biblioteca de aulas e materiais. Sucesso significa encontrar a tarefa do dia, abrir o recurso necessário e registrar no próprio perfil o progresso que realizou.
+Transformar o cronograma Operação ENEM 2026 em uma visão diária prática e em uma biblioteca de aulas e materiais. Sucesso significa encontrar a tarefa do dia, abrir o recurso necessário e marcar o que concluiu, sem telas de registro que não sejam necessárias para seguir o plano.
 
 ## Positioning
 
@@ -28,14 +28,14 @@ Um cronograma do Enem organizado por data, com botões que abrem os recursos cor
 - Datas no fuso `America/Cuiaba`, mostradas em `dd/mm/aaaa`.
 - Uso principalmente no celular, com versão desktop responsiva.
 - Recursos externos são abertos por botões (por exemplo, Hospital Questiona e YouTube); não exibir URLs como texto.
-- A pessoa retorna ao app depois de estudar para marcar aulas/tarefas e informar questões ou erros.
+- A pessoa retorna ao app depois de estudar para marcar aulas/tarefas e, se quiser, registrar um erro no caderno. A tela Hoje não oferece contador/registro de questões.
 
 ## Capabilities and Constraints
 
-- Tela Hoje, Cronograma, Aulas, Redação e Materiais, com navegação inferior em mobile e barra lateral em desktop.
+- Tela Hoje, Cronograma, Aulas, Redação e Materiais, com navegação inferior em mobile e barra lateral em desktop. A barra lateral tem animação discreta e respeita movimento reduzido; há botão de instalação antes e depois do login.
 - Biblioteca com 32 aulas Assaad (28 programadas e quatro extras) e dez vídeos de Redação.
 - Cadastro/login, confirmação de email, recuperação de senha e saída usando Supabase Auth.
-- O Supabase é a única persistência de conteúdo e progresso: cronograma, materiais, conclusão de aulas/tarefas, questões, redações e erros.
+- O Supabase é a única persistência de conteúdo e progresso: cronograma, materiais, conclusão de aulas/tarefas, vídeos e erros. A interface atual não cria nem exibe registros de contagem de questões ou produções de redação; linhas antigas nessas tabelas permanecem preservadas.
 - Persistir somente a sessão Auth no navegador, por escolha expressa do usuário. Não usar IndexedDB/localStorage para conteúdo ou progresso e não criar exportação de backup local.
 - Conteúdo/progresso exigem rede. Offline, explicar que não é possível carregar/gravar dados; não enfileirar mudanças localmente.
 - Não armazenar credenciais do Hospital Questiona. Não armazenar senha do app nas tabelas próprias.

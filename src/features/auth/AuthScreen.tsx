@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, LockKeyhole, Mail, UserRound } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
+import { InstallAppButton } from '../../components/PwaInstallButton';
 
 export function AuthScreen() {
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
@@ -44,9 +45,9 @@ export function AuthScreen() {
       </section>
       <section className="auth-panel"><div className="auth-card"><div className="auth-mobile-brand">OPERAÇÃO ENEM <b>2026</b></div><h2>{heading}</h2><p className="auth-description">Seu progresso fica na sua conta e só você pode acessá-lo.</p>
         <form onSubmit={submit} className="form-stack">
-          {mode === 'signup' && <label className="field"><span>Como podemos chamar você?</span><div className="input-wrap"><UserRound aria-hidden="true" size={18} /><input autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" required /></div></label>}
-          <label className="field"><span>Email</span><div className="input-wrap"><Mail aria-hidden="true" size={18} /><input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" required /></div></label>
-          {mode !== 'reset' && <label className="field"><span>Senha</span><div className="input-wrap"><LockKeyhole aria-hidden="true" size={18} /><input type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres" required /></div></label>}
+          {mode === 'signup' && <label className="field"><span>Como podemos chamar você?</span><div className="input-wrap"><UserRound aria-hidden="true" size={18} /><input name="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" required /></div></label>}
+          <label className="field"><span>Email</span><div className="input-wrap"><Mail aria-hidden="true" size={18} /><input type="email" name="email" autoComplete="email" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" required /></div></label>
+          {mode !== 'reset' && <label className="field"><span>Senha</span><div className="input-wrap"><LockKeyhole aria-hidden="true" size={18} /><input type="password" name="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres" required /></div></label>}
           {mode === 'login' && <button type="button" className="text-link forgot-link" onClick={() => { setMode('reset'); setMessage(''); setError(''); }}>Esqueci minha senha</button>}
           {error && <div className="alert alert-error" role="alert">{error}</div>}{message && <div className="alert alert-success" role="status">{message}</div>}
           <button className="button button-primary auth-submit" type="submit" disabled={busy}>{busy ? 'Aguarde…' : mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Criar minha conta' : 'Enviar link de recuperação'}<ArrowRight aria-hidden="true" size={17} /></button>
@@ -54,6 +55,7 @@ export function AuthScreen() {
         <div className="auth-switch">{mode === 'login' ? <>Ainda não tem conta? <button className="text-link" onClick={() => { setMode('signup'); setMessage(''); setError(''); }}>Criar conta</button></> : <>Já tem conta? <button className="text-link" onClick={() => { setMode('login'); setMessage(''); setError(''); }}>Entrar</button></>}</div>
         {mode === 'reset' && <button className="text-link reset-back" onClick={() => { setMode('login'); setMessage(''); setError(''); }}>Voltar para entrar</button>}
         <p className="privacy-note">Ao continuar, sua conta será usada apenas para salvar seu próprio progresso no cronograma.</p>
+        <InstallAppButton />
       </div></section>
     </main>
   );
@@ -76,5 +78,5 @@ export function UpdatePasswordScreen() {
       setError(e instanceof Error ? e.message : 'Não foi possível atualizar a senha. Solicite outro link e tente novamente.');
     } finally { setBusy(false); }
   }
-  return <main className="setup-state"><form className="auth-card reset-card" onSubmit={submit}><h1>Escolha uma nova senha</h1><label className="field"><span>Nova senha</span><div className="input-wrap"><LockKeyhole aria-hidden="true" size={18} /><input autoComplete="new-password" type="password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} /></div></label>{error && <div className="alert alert-error" role="alert">{error}</div>}{message && <div className="alert alert-success" role="status">{message}</div>}<button className="button button-primary" disabled={busy}>{busy ? 'Salvando…' : 'Atualizar senha'}</button><Link className="text-link" to="/">Voltar</Link></form></main>;
+  return <main className="setup-state"><form className="auth-card reset-card" onSubmit={submit}><h1>Escolha uma nova senha</h1><label className="field"><span>Nova senha</span><div className="input-wrap"><LockKeyhole aria-hidden="true" size={18} /><input name="new-password" autoComplete="new-password" type="password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} /></div></label>{error && <div className="alert alert-error" role="alert">{error}</div>}{message && <div className="alert alert-success" role="status">{message}</div>}<button className="button button-primary" disabled={busy}>{busy ? 'Salvando…' : 'Atualizar senha'}</button><Link className="text-link" to="/">Voltar</Link></form></main>;
 }

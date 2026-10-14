@@ -4,7 +4,7 @@ PWA responsiva para consultar o cronograma do Enem 2026, abrir aulas e materiais
 
 ## Estado do projeto
 
-- Interface React + TypeScript + Vite; PWA instalável para celular e desktop.
+- Interface React + TypeScript + Vite; PWA instalável em celular e desktop, com botão **Instalar app** no login e na sidebar. Não é um APK nem um app de loja.
 - Backend no projeto Supabase **`operacao-enem-2026`**; conteúdo inicial importado e progresso isolado por RLS.
 - **Sem persistência local de dados de estudo**. O navegador mantém somente a sessão gerenciada pelo Supabase Auth; o service worker pré-armazena apenas arquivos estáticos. A gravação exige conexão.
 - Publicado em produção na Netlify em [operacao-enem-2026.netlify.app](https://operacao-enem-2026.netlify.app), conectado ao repositório público [tonyjavier/operacao-enem-2026](https://github.com/tonyjavier/operacao-enem-2026); a branch `main` publica automaticamente.
@@ -35,4 +35,6 @@ O site está conectado ao repositório GitHub acima. A branch `main` é publicad
 
 ## Decisões de UX
 
-Mobile: cinco destinos na navegação inferior. Desktop: barra lateral com os mesmos destinos. A tela Hoje prioriza “Fazer questões” quando a tarefa existir; botões externos abrem o destino e não imprimem a URL. Aula/vídeo indisponível fica indicado como pendente, sem substituição inventada. As contagens, notas e conclusões exibidas vêm do banco ou de informação digitada pelo estudante.
+Mobile: cinco destinos na navegação inferior. Desktop: barra lateral com os mesmos destinos e animação discreta que respeita movimento reduzido. A tela Hoje mantém **Fazer questões** como atalho e permite concluir a tarefa, mas não oferece formulário para contar questões novas/refeitas. Redação mantém os 10 vídeos, microtreinos recolhidos, meta informativa de cinco textos até 07/11 e cronômetro independente; não oferece ficha, contador ou lista de produções. Registros antigos no banco não são apagados.
+
+O botão **Instalar app** usa a opção nativa do navegador quando disponível. No iPhone/iPad, mostra como adicionar à Tela de Início; no Android/desktop, mostra o caminho pelo menu do navegador. Botões externos não imprimem URLs; tarefas, aulas, vídeos, progresso e erros vêm do Supabase, sem dados fictícios.

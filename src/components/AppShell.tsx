@@ -5,6 +5,7 @@ import { getSupabase } from '../lib/supabase';
 import { useAuth } from '../app/App';
 import { LoadingState } from './UI';
 import { useOnlineStatus } from '../lib/useOnlineStatus';
+import { InstallAppButton } from './PwaInstallButton';
 
 const TodayPage = lazy(() => import('../features/today/TodayPage').then((module) => ({ default: module.TodayPage })));
 const SchedulePage = lazy(() => import('../features/schedule/SchedulePage').then((module) => ({ default: module.SchedulePage })));
@@ -62,7 +63,11 @@ export function AppShell() {
       <aside id="primary-navigation" ref={sidebarRef} className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`} role={menuOpen ? 'dialog' : 'complementary'} aria-modal={menuOpen || undefined} aria-label="Navegação principal">
         <div className="brand-lockup"><span className="brand-symbol" aria-hidden="true"><i /><i /><b /></span><div><strong>OPERAÇÃO ENEM</strong><small>2026 · seu plano de estudos</small></div><button ref={closeButtonRef} className="icon-button sidebar-close" aria-label="Fechar menu" onClick={() => setMenuOpen(false)}><X size={19} /></button></div>
         <nav className="side-nav">{links.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} onClick={() => setMenuOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><Icon size={19} strokeWidth={1.8} /><span>{label}</span></NavLink>)}</nav>
-        <div className="sidebar-foot"><div className="account-row"><span className="account-avatar">{email[0]?.toUpperCase() ?? 'A'}</span><div className="account-copy"><strong>Sua conta</strong><span title={email}>{email}</span></div></div><button className="signout-button" onClick={() => void signOut()} disabled={signingOut}><LogOut size={16} />{signingOut ? 'Saindo…' : 'Sair da conta'}</button></div>
+        <div className="sidebar-foot">
+          <div className="account-row"><span className="account-avatar">{email[0]?.toUpperCase() ?? 'A'}</span><div className="account-copy"><strong>Sua conta</strong><span title={email}>{email}</span></div></div>
+          <InstallAppButton />
+          <button className="signout-button" onClick={() => void signOut()} disabled={signingOut}><LogOut size={16} />{signingOut ? 'Saindo…' : 'Sair da conta'}</button>
+        </div>
       </aside>
       {menuOpen && <button className="nav-scrim" aria-label="Fechar menu" onClick={() => setMenuOpen(false)} />}
       <main className="main-area" inert={menuOpen}>
