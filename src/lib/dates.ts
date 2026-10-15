@@ -21,6 +21,12 @@ export function formatDate(date: string, options?: Intl.DateTimeFormatOptions): 
   return new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC', ...options }).format(value);
 }
 
+export function isValidIsoDate(date: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const timestamp = Date.parse(`${date}T12:00:00.000Z`);
+  return Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === date;
+}
+
 export function weekdayLong(date: string): string {
   return formatDate(date, { weekday: 'long' });
 }
@@ -37,8 +43,15 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((b - a) / 86_400_000);
 }
 
+function clampToPlan(date: string): string {
+  if (date < START_DATE) return START_DATE;
+  if (date > END_DATE) return END_DATE;
+  return date;
+}
+
 export function clampStudyDate(date: string): { date: string; adjusted: boolean } {
-  if (date < START_DATE) return { date: START_DATE, adjusted: true };
-  if (date > END_DATE) return { date: END_DATE, adjusted: true };
-  return { date, adjusted: false };
+  const valid = isValidIsoDate(date);
+  const candidate = valid ? date : todayInCuiaba();
+  const bounded = clampToPlan(candidate);
+  return { date: bounded, adjusted: !valid || bounded !== date };
 }

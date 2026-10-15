@@ -75,6 +75,10 @@ def recordset(sql_name: str, rows: list[dict], columns: list[tuple[str, str]]) -
 
 
 def build(args: argparse.Namespace) -> tuple[str, ...]:
+    migration_dir = Path(__file__).resolve().parents[1] / 'supabase' / 'migrations'
+    output_dir = args.output.resolve()
+    if output_dir == migration_dir or migration_dir in output_dir.parents:
+        raise SystemExit('Não gere seeds diretamente em supabase/migrations; revise em supabase/generated e crie uma nova migration manualmente.')
     source = Path(args.prompt).read_text(encoding="utf-8")
     match = re.search(r"```json\s*([\s\S]*?)```", source)
     if not match:
@@ -293,24 +297,31 @@ def build(args: argparse.Namespace) -> tuple[str, ...]:
 
     version_sql = (
         "-- Versioned seed from supplied prompt, PDF, workbook and user-provided video URLs.\n"
+        f"update public.plan_versions set is_active = false where is_active and version <> '{VERSION}';\n"
         f"insert into public.plan_versions (version, starts_on, ends_on, source, is_active) values ('{VERSION}', '2026-10-13', '2026-11-15', '{SOURCE.replace(chr(39), chr(39)*2)}', true)\n"
         "on conflict (version) do update set starts_on = excluded.starts_on, ends_on = excluded.ends_on, source = excluded.source, is_active = true;\n\n"
     )
-    resource_sql = "insert into public.resources (slug, name, url, purpose, resource_type, verification_status, source, sort_order)\nselect x.slug, x.name, x.url, x.purpose, x.resource_type, x.verification_status, x.source, x.sort_order\nfrom " + recordset("resources", resources, [("slug","text"),("name","text"),("url","text"),("purpose","text"),("resource_type","text"),("verification_status","text"),("source","text"),("sort_order","integer")]) + "\non conflict (slug) do update set name = excluded.name, url = excluded.url, purpose = excluded.purpose, resource_type = excluded.resource_type, verification_status = excluded.verification_status, source = excluded.source, sort_order = excluded.sort_order;\n"
+    resource_sql = (
+        "insert into public.resources (plan_version_id, slug, name, url, purpose, resource_type, verification_status, source, sort_order)\n"
+        "select p.id, x.slug, x.name, x.url, x.purpose, x.resource_type, x.verification_status, x.source, x.sort_order\n"
+        "from " + recordset("resources", resources, [("slug","text"),("name","text"),("url","text"),("purpose","text"),("resource_type","text"),("verification_status","text"),("source","text"),("sort_order","integer")]) +
+        " cross join public.plan_versions p where p.version = '" + VERSION + "'\n"
+        "on conflict (plan_version_id, slug) do update set name = excluded.name, url = excluded.url, purpose = excluded.purpose, resource_type = excluded.resource_type, verification_status = excluded.verification_status, source = excluded.source, sort_order = excluded.sort_order;\n"
+    )
     lesson_sql = "insert into public.lessons (plan_version_id, lesson_number, title, subject, priority, duration_seconds, duration_label, scheduled_date, video_url, playlist_url, playlist_index, availability, is_extra, verification_status, source)\nselect p.id, x.lesson_number, x.title, x.subject, x.priority, x.duration_seconds, x.duration_label, x.scheduled_date, x.video_url, x.playlist_url, x.playlist_index, x.availability, x.is_extra, x.verification_status, x.source\nfrom " + recordset("lessons", lessons, [("lesson_number","smallint"),("title","text"),("subject","text"),("priority","text"),("duration_seconds","integer"),("duration_label","text"),("scheduled_date","date"),("video_url","text"),("playlist_url","text"),("playlist_index","smallint"),("availability","text"),("is_extra","boolean"),("verification_status","text"),("source","text")]) + "\ncross join public.plan_versions p where p.version = '" + VERSION + "'\non conflict (plan_version_id, lesson_number) do update set title = excluded.title, subject = excluded.subject, priority = excluded.priority, duration_seconds = excluded.duration_seconds, duration_label = excluded.duration_label, scheduled_date = excluded.scheduled_date, video_url = excluded.video_url, playlist_url = excluded.playlist_url, playlist_index = excluded.playlist_index, availability = excluded.availability, is_extra = excluded.is_extra, verification_status = excluded.verification_status, source = excluded.source;\n"
     essay_sql = "insert into public.essay_videos (plan_version_id, video_number, title, duration_minutes, scheduled_date, practice_task, video_url, playlist_index, verification_status, source)\nselect p.id, x.video_number, x.title, x.duration_minutes, x.scheduled_date, x.practice_task, x.video_url, x.playlist_index, x.verification_status, x.source\nfrom " + recordset("essay_videos", essay_videos, [("video_number","smallint"),("title","text"),("duration_minutes","integer"),("scheduled_date","date"),("practice_task","text"),("video_url","text"),("playlist_index","smallint"),("verification_status","text"),("source","text")]) + "\ncross join public.plan_versions p where p.version = '" + VERSION + "'\non conflict (plan_version_id, video_number) do update set title = excluded.title, duration_minutes = excluded.duration_minutes, scheduled_date = excluded.scheduled_date, practice_task = excluded.practice_task, video_url = excluded.video_url, playlist_index = excluded.playlist_index, verification_status = excluded.verification_status, source = excluded.source;\n"
     schedule_sql = "insert into public.schedule_days (plan_version_id, study_date, weekday, phase, day_type, focus_subject, objective, new_question_goal, question_range, source_payload, source)\nselect p.id, x.study_date, x.weekday, x.phase, x.day_type, x.focus_subject, x.objective, x.new_question_goal, x.question_range, x.source_payload, x.source\nfrom " + recordset("schedule_days", days, [("study_date","date"),("weekday","text"),("phase","text"),("day_type","text"),("focus_subject","text"),("objective","text"),("new_question_goal","integer"),("question_range","text"),("source_payload","jsonb"),("source","text")]) + "\ncross join public.plan_versions p where p.version = '" + VERSION + "'\non conflict (plan_version_id, study_date) do update set weekday = excluded.weekday, phase = excluded.phase, day_type = excluded.day_type, focus_subject = excluded.focus_subject, objective = excluded.objective, new_question_goal = excluded.new_question_goal, question_range = excluded.question_range, source_payload = excluded.source_payload, source = excluded.source;\n"
 
     task_columns = [("study_date","date"),("position","smallint"),("kind","text"),("title","text"),("description","text"),("resource_slug","text"),("lesson_number","smallint"),("essay_video_number","smallint"),("target_min","integer"),("target_max","integer"),("verification_status","text")]
-    task_template = "insert into public.day_tasks (schedule_day_id, position, kind, title, description, resource_id, lesson_id, essay_video_id, target_min, target_max, verification_status)\nselect d.id, x.position, x.kind, x.title, x.description, r.id, l.id, e.id, x.target_min, x.target_max, x.verification_status\nfrom {recordset}\njoin public.schedule_days d on d.study_date = x.study_date\njoin public.plan_versions p on p.id = d.plan_version_id and p.version = '{version}'\nleft join public.resources r on r.slug = x.resource_slug\nleft join public.lessons l on l.plan_version_id = p.id and l.lesson_number = x.lesson_number\nleft join public.essay_videos e on e.plan_version_id = p.id and e.video_number = x.essay_video_number\non conflict (schedule_day_id, position) do update set kind = excluded.kind, title = excluded.title, description = excluded.description, resource_id = excluded.resource_id, lesson_id = excluded.lesson_id, essay_video_id = excluded.essay_video_id, target_min = excluded.target_min, target_max = excluded.target_max, verification_status = excluded.verification_status;\n"
+    task_template = "insert into public.day_tasks (schedule_day_id, position, kind, title, description, resource_id, lesson_id, essay_video_id, target_min, target_max, verification_status)\nselect d.id, x.position, x.kind, x.title, x.description, r.id, l.id, e.id, x.target_min, x.target_max, x.verification_status\nfrom {recordset}\njoin public.schedule_days d on d.study_date = x.study_date\njoin public.plan_versions p on p.id = d.plan_version_id and p.version = '{version}'\nleft join public.resources r on r.plan_version_id = p.id and r.slug = x.resource_slug\nleft join public.lessons l on l.plan_version_id = p.id and l.lesson_number = x.lesson_number\nleft join public.essay_videos e on e.plan_version_id = p.id and e.video_number = x.essay_video_number\non conflict (schedule_day_id, position) do update set kind = excluded.kind, title = excluded.title, description = excluded.description, resource_id = excluded.resource_id, lesson_id = excluded.lesson_id, essay_video_id = excluded.essay_video_id, target_min = excluded.target_min, target_max = excluded.target_max, verification_status = excluded.verification_status;\n"
 
     args.output.mkdir(parents=True, exist_ok=True)
     outputs = []
     fixed = [
-        ("202610130002_seed_content.sql", version_sql + resource_sql),
-        ("202610130003_seed_lessons.sql", lesson_sql),
-        ("202610130004_seed_essay_videos.sql", essay_sql),
-        ("202610130005_seed_schedule_days.sql", schedule_sql),
+        ("seed_content.sql", version_sql + resource_sql),
+        ("seed_lessons.sql", lesson_sql),
+        ("seed_essay_videos.sql", essay_sql),
+        ("seed_schedule_days.sql", schedule_sql),
     ]
     for filename, sql in fixed:
         path = args.output / filename
@@ -323,12 +334,10 @@ def build(args: argparse.Namespace) -> tuple[str, ...]:
         batch = [task for task in tasks if task["study_date"] in batch_dates]
         rows = recordset("day_tasks", batch, task_columns)
         sql = task_template.format(recordset=rows, version=VERSION)
-        path = args.output / f"202610130{5 + batch_index:03d}_seed_tasks_{batch_index:02}.sql"
+        path = args.output / f"seed_tasks_{batch_index:02}.sql"
         path.write_text(sql, encoding="utf-8")
         outputs.append(path)
 
-    for stale in ("202610130003_seed_schedule.sql", "202610130004_seed_tasks.sql"):
-        (args.output / stale).unlink(missing_ok=True)
     return tuple(str(path) for path in outputs)
 
 
@@ -336,7 +345,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--prompt", default="/home/ubuntu/upload/Prompt_APP_Operacao_ENEM_2026.md")
     parser.add_argument("--xlsx", default="/home/ubuntu/upload/Serie-Super-Aulas-Assaad.xlsx")
-    parser.add_argument("--output", type=Path, default=Path("supabase/migrations"))
+    parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parents[1] / "supabase" / "generated", help="Diretório scratch; não use supabase/migrations.")
     args = parser.parse_args()
     for path in build(args):
         print(path)

@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, ExternalLink, RotateCcw } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, EmptyState, formatError, LoadingState, Notice, StatusTag } from '../../components/UI';
-import { addDays, clampStudyDate, daysBetween, FIRST_EXAM, formatDate, SECOND_EXAM, todayInCuiaba, weekdayLong } from '../../lib/dates';
+import { addDays, clampStudyDate, daysBetween, FIRST_EXAM, formatDate, isValidIsoDate, SECOND_EXAM, todayInCuiaba, weekdayLong } from '../../lib/dates';
 import { getSupabase } from '../../lib/supabase';
 import { openApprovedExternalUrl } from '../../lib/external-url';
 import { requireOnline, useOnlineStatus } from '../../lib/useOnlineStatus';
@@ -14,19 +14,26 @@ export function TodayPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedDate = searchParams.get('date') || todayInCuiaba();
   const { date: selectedDate, adjusted } = clampStudyDate(requestedDate);
+  const invalidRequestedDate = !isValidIsoDate(requestedDate);
   const [day, setDay] = useState<ScheduleDay | null>(null);
   const [tasks, setTasks] = useState<LinkedTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const isOnline = useOnlineStatus();
+  const loadSequence = useRef(0);
 
   const load = useCallback(async () => {
+    const sequence = ++loadSequence.current;
+    const isCurrent = () => sequence === loadSequence.current;
     setLoading(true);
     setError('');
+    setDay(null);
+    setTasks([]);
     try {
       const supabase = getSupabase();
       const { data: plan, error: planError } = await supabase.from('plan_versions').select('*').eq('is_active', true).maybeSingle();
+      if (!isCurrent()) return;
       if (planError) throw planError;
       if (!plan) throw new Error('O cronograma ativo ainda não foi publicado no Supabase.');
 
@@ -36,14 +43,14 @@ export function TodayPage() {
         .eq('plan_version_id', (plan as PlanVersion).id)
         .eq('study_date', selectedDate)
         .maybeSingle();
+      if (!isCurrent()) return;
       if (dayError) throw dayError;
-      setDay(dayData);
       if (!dayData) {
-        setTasks([]);
         return;
       }
 
       const { data: taskRows, error: taskError } = await supabase.from('day_tasks').select('*').eq('schedule_day_id', dayData.id).order('position');
+      if (!isCurrent()) return;
       if (taskError) throw taskError;
       const rows = (taskRows ?? []) as DayTask[];
       const resourceIds = rows.flatMap((row) => row.resource_id ? [row.resource_id] : []);
@@ -52,16 +59,18 @@ export function TodayPage() {
       const taskIds = rows.map((row) => row.id);
       const [resources, lessons, essays, progress] = await Promise.all([
         resourceIds.length ? supabase.from('resources').select('*').eq('plan_version_id', (plan as PlanVersion).id).in('id', resourceIds) : Promise.resolve({ data: [], error: null }),
-        lessonIds.length ? supabase.from('lessons').select('*').in('id', lessonIds) : Promise.resolve({ data: [], error: null }),
-        essayIds.length ? supabase.from('essay_videos').select('*').in('id', essayIds) : Promise.resolve({ data: [], error: null }),
+        lessonIds.length ? supabase.from('lessons').select('*').eq('plan_version_id', (plan as PlanVersion).id).in('id', lessonIds) : Promise.resolve({ data: [], error: null }),
+        essayIds.length ? supabase.from('essay_videos').select('*').eq('plan_version_id', (plan as PlanVersion).id).in('id', essayIds) : Promise.resolve({ data: [], error: null }),
         taskIds.length ? supabase.from('user_task_progress').select('*').in('day_task_id', taskIds) : Promise.resolve({ data: [], error: null }),
       ]);
+      if (!isCurrent()) return;
       for (const result of [resources, lessons, essays, progress]) if (result.error) throw result.error;
 
       const resourceMap = new Map(((resources.data ?? []) as Resource[]).map((item) => [item.id, item]));
       const lessonMap = new Map(((lessons.data ?? []) as Lesson[]).map((item) => [item.id, item]));
       const essayMap = new Map(((essays.data ?? []) as EssayVideo[]).map((item) => [item.id, item]));
       const progressMap = new Map(((progress.data ?? []) as UserTaskProgress[]).map((item) => [item.day_task_id, item]));
+      setDay(dayData);
       setTasks(rows
         .map((row) => ({
           ...row,
@@ -72,16 +81,13 @@ export function TodayPage() {
         }))
         .sort((a, b) => Number(b.kind === 'question') - Number(a.kind === 'question') || a.position - b.position));
     } catch (e) {
-      setError(formatError(e, 'Não foi possível carregar o dia.'));
+      if (isCurrent()) setError(formatError(e, 'Não foi possível carregar o dia.'));
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [selectedDate]);
 
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => {
-    if (requestedDate !== selectedDate) setSearchParams({ date: selectedDate }, { replace: true });
-  }, [requestedDate, selectedDate, setSearchParams]);
 
   const doneCount = tasks.filter((task) => task.done).length;
   const taskCount = tasks.length;
@@ -144,11 +150,11 @@ export function TodayPage() {
         </div>
       </div>
 
-      {adjusted && <Notice tone="warning">Data fora do cronograma. Mostrando {formatDate(selectedDate)}.</Notice>}
+      {adjusted && <Notice tone="warning">{invalidRequestedDate ? 'Data inválida' : 'Data fora do cronograma'}. Mostrando {formatDate(selectedDate)}.</Notice>}
       {error && <div className="alert alert-error today-alert" role="alert">{error}</div>}
       {message && <div className="alert alert-success today-alert" role="status">{message}</div>}
       {!day ? (
-        <EmptyState title="Sem tarefas nesta data" description="Escolha outra data do cronograma." />
+        error ? null : <EmptyState title="Sem tarefas nesta data" description="Escolha outra data do cronograma." />
       ) : (
         <>
           <div className="daily-progress surface">

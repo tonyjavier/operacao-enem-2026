@@ -11,19 +11,21 @@ PWA responsiva para consultar o cronograma do Enem 2026, abrir aulas e materiais
 
 ## Executar localmente
 
-1. Use Node.js 22 e pnpm.
+1. Use Node.js 22.13.0 (versão fixada em `.nvmrc`) e pnpm.
 2. Copie `.env.example` para `.env.local` e preencha `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` com os valores públicos do projeto aprovado. Nunca use `service_role` no frontend.
 3. Instale dependências com `pnpm install --frozen-lockfile`.
 4. Execute `pnpm dev` (porta 5173).
-5. Valide com `pnpm check` e gere a PWA com `pnpm build`; `pnpm preview` serve a pasta `dist` na porta 4173.
+5. Valide com `pnpm check` e `pnpm test`; `pnpm build` gera a PWA e executa o smoke check, e `pnpm preview` serve a pasta `dist` na porta 4173.
 
 Não comite `.env.local`. As variáveis `VITE_*` entram no bundle e devem ser somente credenciais públicas; o isolamento é feito por RLS.
 
 ## Supabase e conteúdo
 
-As migrations em `supabase/migrations/` definem tabelas de conteúdo, contas/progresso, políticas RLS, índices, bucket privado para fotos do caderno de erros e a carga de conteúdo do cronograma. Incluem 32 aulas (28 do cronograma e quatro adicionais), 10 vídeos de Redação, 34 dias, 144 tarefas e 11 recursos (materiais e referências). Consulte o SQL versionado antes de reaplicá-lo a outro projeto.
+As migrations em `supabase/migrations/` definem tabelas de conteúdo, contas/progresso, políticas RLS, índices, bucket privado para fotos do caderno de erros e a carga de conteúdo do cronograma. Incluem 32 aulas (28 do cronograma e quatro adicionais), 10 vídeos de Redação, 34 dias, 144 tarefas e 11 recursos (materiais e referências). Os recursos são versionados junto ao cronograma.
 
 A identidade proprietária é obtida por `auth.uid()`; não aceite `user_id` de formulários como fonte de autoridade. Não desative RLS. O bucket `error-attachments` é privado e aceita JPEG, PNG e WebP até 10 MB.
+
+`scripts/build_seed.py` escreve por padrão em `supabase/generated/`, ignorado pelo Git. Revise as saídas e crie uma nova migration com timestamp próprio; não gere nem reescreva arquivos já aplicados em `supabase/migrations/`.
 
 No projeto Supabase de produção, o Site URL está definido como `https://operacao-enem-2026.netlify.app` e a allowlist contém somente `https://operacao-enem-2026.netlify.app/` e `https://operacao-enem-2026.netlify.app/reset-password`.
 

@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Delegada pelo usuário para executar o plano aprovado: PWA responsiva com React + TypeScript + Vite, Supabase Postgres/Auth como backend, e Vercel como hospedagem do frontend. App público requer login; sem administração no produto.
+Delegada pelo usuário para executar o plano aprovado: PWA responsiva com React + TypeScript + Vite, Supabase Postgres/Auth como backend, e Netlify como hospedagem do frontend. App público requer login; sem administração no produto.
 
 ## Users
 

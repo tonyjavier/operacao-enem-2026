@@ -14,7 +14,13 @@ import './materials.css';
 const errorTypes = [
   ['knowledge', 'Falta de conhecimento'], ['interpretation', 'Interpretação'], ['calculation', 'Cálculo'], ['concept', 'Conceito'], ['inattention', 'Desatenção'], ['time', 'Gestão do tempo'], ['other', 'Outro'],
 ] as const;
-const emptyNote = { subject: '', topic: '', prompt: '', error_type: 'knowledge', correction_note: '', review_due_on: addDays(todayInCuiaba(), 1) };
+const emptyNote = () => ({ subject: '', topic: '', prompt: '', error_type: 'knowledge', correction_note: '', review_due_on: addDays(todayInCuiaba(), 1) });
+
+function compareNotesByReviewDate(a: UserErrorNote, b: UserErrorNote): number {
+  if (!a.review_due_on) return b.review_due_on ? 1 : b.created_at.localeCompare(a.created_at);
+  if (!b.review_due_on) return -1;
+  return a.review_due_on.localeCompare(b.review_due_on) || b.created_at.localeCompare(a.created_at);
+}
 
 export function MaterialsPage() {
   const { session } = useAuth();
@@ -24,6 +30,7 @@ export function MaterialsPage() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [notes, setNotes] = useState<UserErrorNote[]>([]);
   const [form, setForm] = useState(emptyNote);
+  const [reviewDateEdited, setReviewDateEdited] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoLinks, setPhotoLinks] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -47,7 +54,7 @@ export function MaterialsPage() {
         ]);
         if (resourceResult.error) throw resourceResult.error;
         if (noteResult.error) throw noteResult.error;
-        if (active) { setResources((resourceResult.data ?? []) as Resource[]); setNotes((noteResult.data ?? []) as UserErrorNote[]); }
+        if (active) { setResources((resourceResult.data ?? []) as Resource[]); setNotes([...(noteResult.data ?? []) as UserErrorNote[]].sort(compareNotesByReviewDate)); }
       } catch (e) { if (active) setError(formatError(e, 'Não foi possível carregar os materiais.')); }
       finally { if (active) setLoading(false); }
     }
@@ -73,6 +80,7 @@ export function MaterialsPage() {
     event.preventDefault(); setSaving(true); setError(''); setMessage('');
     if (!session?.user.id) { setError('Entre na sua conta para salvar um erro.'); setSaving(false); return; }
     let photoPath: string | null = null;
+    let photoSaved = false;
     try {
       requireOnline();
       const supabase = getSupabase();
@@ -84,13 +92,22 @@ export function MaterialsPage() {
         const { error: uploadError } = await supabase.storage.from('error-attachments').upload(photoPath, photo, { contentType: photo.type, upsert: false });
         if (uploadError) throw uploadError;
       }
-      const { data, error: insertError } = await supabase.from('user_error_notes').insert({ subject: form.subject.trim(), topic: form.topic.trim(), prompt: form.prompt.trim() || null, error_type: form.error_type, correction_note: form.correction_note.trim(), review_due_on: form.review_due_on || null, photo_path: photoPath }).select('*').single();
-      if (insertError) {
-        if (photoPath) await supabase.storage.from('error-attachments').remove([photoPath]);
-        throw insertError;
+      const reviewDueOn = reviewDateEdited ? form.review_due_on : addDays(todayInCuiaba(), 1);
+      const { data, error: insertError } = await supabase.from('user_error_notes').insert({ subject: form.subject.trim(), topic: form.topic.trim(), prompt: form.prompt.trim() || null, error_type: form.error_type, correction_note: form.correction_note.trim(), review_due_on: reviewDueOn || null, photo_path: photoPath }).select('*').single();
+      if (insertError) throw insertError;
+      photoSaved = true;
+      setNotes((current) => [...current, data as UserErrorNote].sort(compareNotesByReviewDate)); setForm(emptyNote()); setReviewDateEdited(false); setPhoto(null); if (fileInput.current) fileInput.current.value = ''; setMessage('Erro salvo em sua conta; a revisão ficou na fila.');
+    } catch (e) {
+      if (photoPath && !photoSaved) {
+        try {
+          const { data: linkedNote, error: lookupError } = await getSupabase().from('user_error_notes').select('id').eq('photo_path', photoPath).maybeSingle();
+          if (!lookupError && !linkedNote) await getSupabase().storage.from('error-attachments').remove([photoPath]);
+        } catch {
+          // Preserve the object when the lookup is uncertain; deleting a referenced photo is worse than an orphan.
+        }
       }
-      setNotes((current) => [data as UserErrorNote, ...current]); setForm({ ...emptyNote, review_due_on: addDays(todayInCuiaba(), 1) }); setPhoto(null); if (fileInput.current) fileInput.current.value = ''; setMessage('Erro salvo em sua conta; a revisão ficou na fila.');
-    } catch (e) { setError(formatError(e, 'Não foi possível salvar o erro.')); }
+      setError(formatError(e, 'Não foi possível salvar o erro.'));
+    }
     finally { setSaving(false); }
   }
 
@@ -129,17 +146,17 @@ export function MaterialsPage() {
         <label className="field"><span>Disciplina</span><input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Ex.: Matemática" required /></label>
         <label className="field"><span>Assunto</span><input value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} placeholder="Ex.: Função afim" required /></label>
         <label className="field"><span>Tipo de erro</span><select value={form.error_type} onChange={(e) => setForm({ ...form, error_type: e.target.value })}>{errorTypes.map(([key, label]) => <option value={key} key={key}>{label}</option>)}</select></label>
-        <label className="field"><span>Revisar em</span><input type="date" value={form.review_due_on} onChange={(e) => setForm({ ...form, review_due_on: e.target.value })} /></label>
+        <label className="field"><span>Revisar em</span><input type="date" value={reviewDateEdited ? form.review_due_on : addDays(todayInCuiaba(), 1)} onChange={(e) => { setReviewDateEdited(true); setForm({ ...form, review_due_on: e.target.value }); }} /></label>
         <label className="field error-wide"><span>Questão ou contexto (opcional)</span><textarea rows={2} value={form.prompt} onChange={(e) => setForm({ ...form, prompt: e.target.value })} placeholder="Escreva um trecho ou identifique a questão" /></label>
         <label className="field error-wide"><span>Correção em uma frase</span><textarea rows={2} value={form.correction_note} onChange={(e) => setForm({ ...form, correction_note: e.target.value })} placeholder="O que você precisa lembrar na próxima vez?" required /></label>
-        <div className="file-picker error-wide"><input ref={fileInput} id="error-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} /><label htmlFor="error-photo"><ImagePlus size={17} />{photo ? photo.name : 'Adicionar foto (opcional, até 5 MB)'}</label><span>A imagem fica privada no Supabase.</span></div>
-        <div className="error-submit error-wide"><span>Revisão sugerida para {form.review_due_on ? formatDate(form.review_due_on) : 'data não definida'}; você pode ajustar.</span><Button type="submit" disabled={saving || !isOnline}>{saving ? 'Salvando…' : 'Salvar erro'}<ArrowUpRight size={15} /></Button></div>
+        <div className="file-picker error-wide"><input ref={fileInput} id="error-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} /><label htmlFor="error-photo"><ImagePlus size={17} />{photo ? photo.name : 'Adicionar foto (opcional, até 10 MB)'}</label><span>A imagem fica privada no Supabase.</span></div>
+        <div className="error-submit error-wide"><span>Revisão sugerida para {reviewDateEdited ? (form.review_due_on ? formatDate(form.review_due_on) : 'data não definida') : formatDate(addDays(todayInCuiaba(), 1))}; você pode ajustar.</span><Button type="submit" disabled={saving || !isOnline}>{saving ? 'Salvando…' : 'Salvar erro'}<ArrowUpRight size={15} /></Button></div>
       </div></form>
 
       <div className="error-queue-heading"><h4>Fila de revisão</h4><span>{pendingNotes.length} para revisar</span></div>
       {pendingNotes.length === 0 ? <EmptyState title="Sua fila está vazia" description="Quando registrar uma questão difícil, ela aparecerá aqui para revisão." /> : <div className="error-note-list">{pendingNotes.map((note) => {
         const overdue = note.review_due_on ? note.review_due_on <= todayInCuiaba() : false;
-        return <article className="error-note-row" key={note.id}><div className="error-note-info"><div className="error-note-head"><strong>{note.subject} <span>·</span> {note.topic}</strong><StatusTag tone={overdue ? 'warning' : 'neutral'}>{overdue ? 'Revisar agora' : note.review_due_on ? `Revisar ${formatDate(note.review_due_on)}` : 'Sem data'}</StatusTag></div><p><b>{labelForType(note.error_type)}.</b> {note.correction_note}</p>{note.prompt && <details className="error-prompt"><summary>Ver questão/contexto</summary><p>{note.prompt}</p></details>}<div className="error-note-actions">{note.photo_path && (photoLinks[note.id] ? <a className="text-link" href={photoLinks[note.id]} target="_blank" rel="noopener noreferrer">Abrir foto</a> : <button className="text-link" disabled={!isOnline} onClick={() => void preparePhoto(note)}>Preparar link da foto</button>)}<button className="text-link" disabled={!isOnline} onClick={() => void markReviewed(note, true)}>Marcar revisão feita <Check size={13} /></button></div></div></article>;
+        return <article className="error-note-row" key={note.id}><div className="error-note-info"><div className="error-note-head"><strong>{note.subject} <span>·</span> {note.topic}</strong><StatusTag tone={overdue ? 'warning' : 'neutral'}>{overdue ? 'Revisar agora' : note.review_due_on ? `Revisar ${formatDate(note.review_due_on)}` : 'Sem data'}</StatusTag></div><p><b>{labelForType(note.error_type)}.</b> {note.correction_note}</p>{note.prompt && <details className="error-prompt"><summary>Ver questão/contexto</summary><p>{note.prompt}</p></details>}<div className="error-note-actions">{note.photo_path && <>{photoLinks[note.id] && <a className="text-link" href={photoLinks[note.id]} target="_blank" rel="noopener noreferrer">Abrir foto</a>}<button type="button" className="text-link" disabled={!isOnline} onClick={() => void preparePhoto(note)}>{photoLinks[note.id] ? 'Renovar link da foto' : 'Preparar link da foto'}</button></>}<button className="text-link" disabled={!isOnline} onClick={() => void markReviewed(note, true)}>Marcar revisão feita <Check size={13} /></button></div></div></article>;
       })}</div>}
       {reviewedNotes.length > 0 && <details className="reviewed-section"><summary>Revisados ({reviewedNotes.length})</summary><div className="error-note-list">{reviewedNotes.map((note) => <article className="error-note-row reviewed-note" key={note.id}><div className="error-note-info"><div className="error-note-head"><strong>{note.subject} · {note.topic}</strong><StatusTag tone="success">Revisado</StatusTag></div><p>{note.correction_note}</p><button className="text-link" disabled={!isOnline} onClick={() => void markReviewed(note, false)}><RotateCcw size={13} /> Devolver à fila</button></div></article>)}</div></details>}
     </section>
