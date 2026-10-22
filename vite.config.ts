@@ -1,10 +1,17 @@
 import { defineConfig } from 'vite';
+import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+
+const appVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
 
 export default defineConfig({
   plugins: [
     react(),
+    {
+      name: 'app-version-meta',
+      transformIndexHtml: (html) => html.replace('</head>', `  <meta name="app-version" content="${appVersion}" />\n  </head>`),
+    },
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'enem-banner.jpg'],
