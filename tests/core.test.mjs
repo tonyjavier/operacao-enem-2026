@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { clampStudyDate, END_DATE, isValidIsoDate, START_DATE } from '../src/lib/dates.ts';
+import { approvedExternalUrl } from '../src/lib/external-url.ts';
 import { parseResumePositionSeconds } from '../src/lib/lesson-progress.ts';
 
 test('valida datas ISO sem normalizar datas impossíveis', () => {
@@ -26,4 +27,11 @@ test('valida pontos de retomada opcionais e dentro da duração conhecida', () =
   assert.throws(() => parseResumePositionSeconds('-1', 3600), /inteiro e não negativo/);
   assert.throws(() => parseResumePositionSeconds('2.5', 3600), /inteiro e não negativo/);
   assert.throws(() => parseResumePositionSeconds('3601', 3600), /superar a duração/);
+});
+
+test('permite o PDF no domínio oficial do app e rejeita hosts semelhantes', () => {
+  const pdfUrl = 'https://operacao-enem-2026.netlify.app/materiais/arquivo.pdf';
+  assert.equal(approvedExternalUrl(pdfUrl), pdfUrl);
+  assert.equal(approvedExternalUrl('http://operacao-enem-2026.netlify.app/materiais/arquivo.pdf'), null);
+  assert.equal(approvedExternalUrl('https://operacao-enem-2026.netlify.app.evil.test/arquivo.pdf'), null);
 });

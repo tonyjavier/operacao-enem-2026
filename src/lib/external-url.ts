@@ -1,6 +1,7 @@
 const APPROVED_EXTERNAL_HOSTS = new Set([
   'hospital.questiona.com.br',
   'lucasdorioverde.mt.gov.br',
+  'operacao-enem-2026.netlify.app',
   'palavraschavenemrenan.link',
   'questoespadroesmatematicaenem.lovable.app',
   'www.gov.br',
