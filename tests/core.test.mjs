@@ -35,3 +35,15 @@ test('permite o PDF no domínio oficial do app e rejeita hosts semelhantes', () 
   assert.equal(approvedExternalUrl('http://operacao-enem-2026.netlify.app/materiais/arquivo.pdf'), null);
   assert.equal(approvedExternalUrl('https://operacao-enem-2026.netlify.app.evil.test/arquivo.pdf'), null);
 });
+
+test('permite links HTTPS do mesmo app, mas não links de outras origens', () => {
+  const previousWindow = globalThis.window;
+  globalThis.window = { location: { origin: 'https://main--operacao-enem-2026.netlify.app' } };
+  try {
+    assert.equal(approvedExternalUrl('https://main--operacao-enem-2026.netlify.app/materiais/arquivo.pdf'), 'https://main--operacao-enem-2026.netlify.app/materiais/arquivo.pdf');
+    assert.equal(approvedExternalUrl('https://example.com/arquivo.pdf'), null);
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+  }
+});

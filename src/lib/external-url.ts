@@ -13,7 +13,8 @@ export function approvedExternalUrl(input: string | null | undefined): string | 
   if (!input) return null;
   try {
     const url = new URL(input);
-    if (url.protocol !== 'https:' || url.username || url.password || url.port || !APPROVED_EXTERNAL_HOSTS.has(url.hostname.toLowerCase())) {
+    const sameOrigin = typeof window !== 'undefined' && url.origin === window.location.origin;
+    if (url.protocol !== 'https:' || url.username || url.password || url.port || (!sameOrigin && !APPROVED_EXTERNAL_HOSTS.has(url.hostname.toLowerCase()))) {
       return null;
     }
     return url.href;
