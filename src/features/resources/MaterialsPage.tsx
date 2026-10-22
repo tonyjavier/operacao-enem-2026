@@ -5,7 +5,7 @@ import { ArrowUpRight, Check, ExternalLink, FilePlus2, ImagePlus, RotateCcw } fr
 import { Button, EmptyState, formatError, LoadingState, PageIntro, StatusTag } from '../../components/UI';
 import { addDays, formatDate, todayInCuiaba } from '../../lib/dates';
 import { getSupabase } from '../../lib/supabase';
-import { openApprovedExternalUrl, trustedSupabaseSignedUrl } from '../../lib/external-url';
+import { approvedExternalUrl, trustedSupabaseSignedUrl } from '../../lib/external-url';
 import { requireOnline, useOnlineStatus } from '../../lib/useOnlineStatus';
 import { useAuth } from '../../app/App';
 import type { PlanVersion, Resource, UserErrorNote } from '../../lib/database.types';
@@ -71,11 +71,6 @@ export function MaterialsPage() {
     return () => window.clearTimeout(timer);
   }, [requestedResource, loading]);
 
-  function openResource(resource: Resource) {
-    if (!resource.url || resource.verification_status === 'pending') return;
-    if (!openApprovedExternalUrl(resource.url)) setError('Este destino externo não passou pela validação de segurança.');
-  }
-
   async function saveNote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setError(''); setMessage('');
     if (!session?.user.id) { setError('Entre na sua conta para salvar um erro.'); setSaving(false); return; }
@@ -138,7 +133,10 @@ export function MaterialsPage() {
   return <div className="materials-page"><PageIntro title="Materiais e erros" description="Atalhos para os recursos do plano e uma fila de revisão privada da sua conta." />
     {error && <div className="alert alert-error" role="alert">{error}</div>}{message && <div className="alert alert-success" role="status">{message}</div>}
     <section className="section-block materials-section"><div className="section-heading"><div><h3>Materiais e referências</h3><p>Os botões abrem o destino em outra aba; o endereço não aparece na tela.</p></div><StatusTag>{resources.length} recursos</StatusTag></div>
-      {resources.length === 0 ? <EmptyState title="Materiais ainda não carregados" description="Os recursos do cronograma aparecerão aqui quando publicados no Supabase." /> : <div className="resource-list">{resources.map((resource) => <article id={`resource-${resource.id}`} className="resource-row" key={resource.id}><div className="resource-main"><div className="resource-title-line"><h4>{resource.name}</h4><StatusTag tone={resource.verification_status === 'confirmed' ? 'neutral' : 'pending'}>{resource.verification_status === 'confirmed' ? 'Confirmado' : resource.verification_status === 'estimated' ? 'Estimado' : 'Pendente'}</StatusTag></div><p>{resource.purpose}</p></div><div className="resource-actions">{resource.url && resource.verification_status !== 'pending' ? <Button variant="secondary" disabled={!isOnline} onClick={() => openResource(resource)}>Abrir <ExternalLink size={15} /></Button> : <Button variant="secondary" disabled>{resource.verification_status === 'pending' ? 'Aguardando confirmação' : 'Usado na escola'}</Button>}</div></article>)}</div>}
+      {resources.length === 0 ? <EmptyState title="Materiais ainda não carregados" description="Os recursos do cronograma aparecerão aqui quando publicados no Supabase." /> : <div className="resource-list">{resources.map((resource) => {
+        const safeUrl = resource.verification_status === 'pending' ? null : approvedExternalUrl(resource.url);
+        return <article id={`resource-${resource.id}`} className="resource-row" key={resource.id}><div className="resource-main"><div className="resource-title-line"><h4>{resource.name}</h4><StatusTag tone={resource.verification_status === 'confirmed' ? 'neutral' : 'pending'}>{resource.verification_status === 'confirmed' ? 'Confirmado' : resource.verification_status === 'estimated' ? 'Estimado' : 'Pendente'}</StatusTag></div><p>{resource.purpose}</p></div><div className="resource-actions">{safeUrl ? <a className="button button-secondary" href={safeUrl} target="_blank" rel="noopener noreferrer" aria-label={`Abrir ${resource.name}`}><span>Abrir</span><ExternalLink size={15} /></a> : <Button variant="secondary" disabled>{resource.verification_status === 'pending' ? 'Aguardando confirmação' : resource.url ? 'Destino não aprovado' : 'Usado na escola'}</Button>}</div></article>;
+      })}</div>}
     </section>
 
     <section className="section-block error-book-section"><div className="section-heading"><div><h3>Caderno de erros</h3><p>Registre o que errou e a correção em uma frase. Revise em 24–48 horas.</p></div><StatusTag>{pendingNotes.length} na fila</StatusTag></div>
