@@ -21,11 +21,22 @@
 .microtraining-row>span{color:#555;font-size:12px;text-transform:capitalize}
 .microtraining-row strong{font-size:13px}
 .microtraining-row p{margin:3px 0 0;color:#666;font-size:12px;line-height:1.45}
-.essay-timer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:10px;padding:14px 16px;border:1px solid #d7d7d7;border-radius:20px;background:#f7f7f7}
+.essay-timer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto auto;align-items:center;gap:10px;padding:14px 16px;border:1px solid #d7d7d7;border-radius:20px;background:#f7f7f7}
 .essay-timer-copy strong{display:block;font-size:14px}
 .essay-timer-copy p{max-width:55ch;margin:5px 0 0;color:#5e5e5e;font-size:12px;line-height:1.5}
 .essay-timer-target select{min-height:44px;padding:8px 10px;border:1px solid #c9c9c9;border-radius:12px;background:#fff;color:#111;font-size:14px}
 .essay-timer-clock{min-width:82px;font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center}
 .essay-timer>.button{min-height:44px;white-space:nowrap}
+.essay-timer-mode select{min-height:44px;padding:8px 10px;border:1px solid #c9c9c9;border-radius:12px;background:#fff;color:#111;font-size:14px}
+.essay-focus-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:#111;color:#fff}
+.essay-focus-minimize{position:absolute;top:max(18px,env(safe-area-inset-top));right:max(18px,env(safe-area-inset-right));min-height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid #444;border-radius:13px;background:#1c1c1c;color:#fff;font-size:13px;cursor:pointer}
+.essay-focus-content{width:min(100%,720px);display:grid;justify-items:center;text-align:center}
+.essay-focus-kicker{margin:0;color:#bdbdbd;font-size:14px;font-weight:650;letter-spacing:.08em;text-transform:uppercase}
+.essay-focus-clock{margin:16px 0;font-size:clamp(76px,18vw,168px);font-weight:750;letter-spacing:-.07em;line-height:1;font-variant-numeric:tabular-nums}
+.essay-focus-message{max-width:45ch;margin:0;color:#d0d0d0;font-size:16px;line-height:1.6}
+.essay-focus-count{margin-top:12px;color:#bdbdbd;font-size:13px}
+.essay-focus-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:32px}
+.essay-focus-actions .button{min-width:132px;min-height:48px;justify-content:center}
+.essay-focus-finished{margin:24px 0 0;font-size:17px;font-weight:650}
 @media(max-width:760px){.essay-goal{padding:18px}.essay-goal h2{font-size:18px}.essay-video-row{grid-template-columns:34px minmax(0,1fr);gap:10px}.essay-video-number{width:32px;height:32px}.essay-video-actions{grid-column:2;grid-template-columns:1fr;justify-items:stretch}.essay-video-actions .button{width:100%;justify-content:center}.essay-video-actions .complete-task{justify-self:start}.essay-video-copy h4{font-size:13px}}
-@media(max-width:640px){.essay-timer{grid-template-columns:1fr auto}.essay-timer-copy{grid-column:1/-1}.essay-timer-target{grid-column:1}.essay-timer-clock{grid-column:2}.essay-timer>.button{grid-column:1/-1;justify-content:center}}
+@media(max-width:640px){.essay-timer{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.essay-timer-copy{grid-column:1/-1}.essay-timer-mode{grid-column:1}.essay-timer-target{grid-column:2}.essay-timer-clock{grid-column:1/-1}.essay-timer>.button{grid-column:1/-1;justify-content:center}}

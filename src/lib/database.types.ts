@@ -10,6 +10,7 @@ export type UserEssayVideoProgress = { user_id: string; essay_video_id: string; 
 export type UserQuestionSession = { id: string; user_id: string; schedule_day_id: string; day_task_id: string | null; operation_id: string; new_count: number; redo_count: number; correction_done: boolean; created_at: string };
 export type UserErrorNote = { id: string; user_id: string; schedule_day_id: string | null; lesson_id: string | null; subject: string; topic: string; prompt: string | null; error_type: string; correction_note: string; review_due_on: string | null; reviewed_at: string | null; photo_path: string | null; created_at: string; updated_at: string };
 export type UserEssayEntry = { id: string; user_id: string; schedule_day_id: string | null; completed_on: string; theme: string | null; is_timed: boolean; duration_minutes: number | null; thesis: string | null; difficulties: string | null; argumentation: string | null; cohesion: string | null; language: string | null; intervention: string | null; rewrite_notes: string | null; competency_scores: Record<string, number>; is_complete: boolean; created_at: string; updated_at: string };
+export type UserPersonalTask = { id: string; user_id: string; title: string; details: string; due_on: string | null; is_completed: boolean; created_at: string };
 
 type Table<Row> = { Row: Row; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] };
 export type Database = {
@@ -28,6 +29,7 @@ export type Database = {
       user_question_sessions: Table<UserQuestionSession>;
       user_error_notes: Table<UserErrorNote>;
       user_essay_entries: Table<UserEssayEntry>;
+      user_personal_tasks: Table<UserPersonalTask>;
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };

@@ -3,6 +3,15 @@ import test from 'node:test';
 import { clampStudyDate, END_DATE, isValidIsoDate, START_DATE } from '../src/lib/dates.ts';
 import { approvedExternalUrl } from '../src/lib/external-url.ts';
 import { parseResumePositionSeconds } from '../src/lib/lesson-progress.ts';
+import { nextPomodoroPhase, timerSeconds } from '../src/features/essay/timer.ts';
+
+test('cronômetro Pomodoro alterna 25 minutos de foco e 5 de pausa', () => {
+  assert.equal(timerSeconds('pomodoro', 'focus', 90), 25 * 60);
+  assert.equal(timerSeconds('pomodoro', 'break', 90), 5 * 60);
+  assert.equal(nextPomodoroPhase('focus'), 'break');
+  assert.equal(nextPomodoroPhase('break'), 'focus');
+  assert.equal(timerSeconds('essay', 'focus', 85), 85 * 60);
+});
 
 test('valida datas ISO sem normalizar datas impossíveis', () => {
   assert.equal(isValidIsoDate('2026-10-13'), true);

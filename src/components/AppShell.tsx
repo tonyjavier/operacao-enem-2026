@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
-import { BookOpen, CalendarDays, ClipboardList, FileText, LogOut, Menu, X } from 'lucide-react';
+import { BookOpen, CalendarDays, ClipboardList, FileText, ListTodo, LogOut, Menu, X } from 'lucide-react';
 import { getSupabase } from '../lib/supabase';
 import { useAuth } from '../app/App';
 import { LoadingState } from './UI';
@@ -12,6 +12,7 @@ const SchedulePage = lazy(() => import('../features/schedule/SchedulePage').then
 const LessonsPage = lazy(() => import('../features/lessons/LessonsPage').then((module) => ({ default: module.LessonsPage })));
 const EssayPage = lazy(() => import('../features/essay/EssayPage').then((module) => ({ default: module.EssayPage })));
 const MaterialsPage = lazy(() => import('../features/resources/MaterialsPage').then((module) => ({ default: module.MaterialsPage })));
+const TasksPage = lazy(() => import('../features/tasks/TasksPage').then((module) => ({ default: module.TasksPage })));
 
 const links = [
   { to: '/', label: 'Hoje', icon: ClipboardList, end: true },
@@ -19,8 +20,10 @@ const links = [
   { to: '/aulas', label: 'Aulas', icon: BookOpen },
   { to: '/redacao', label: 'Redação', icon: FileText },
   { to: '/materiais', label: 'Materiais e erros', icon: BookOpen },
+  { to: '/tarefas', label: 'Minhas tarefas', icon: ListTodo },
 ];
-const titles: Record<string, string> = { '/': 'Hoje', '/cronograma': 'Cronograma', '/aulas': 'Aulas', '/redacao': 'Redação', '/materiais': 'Materiais e erros' };
+const bottomLinks = links.filter(({ to }) => to !== '/tarefas');
+const titles: Record<string, string> = { '/': 'Hoje', '/cronograma': 'Cronograma', '/aulas': 'Aulas', '/redacao': 'Redação', '/materiais': 'Materiais e erros', '/tarefas': 'Minhas tarefas' };
 
 export function AppShell() {
   const { session } = useAuth();
@@ -75,10 +78,10 @@ export function AppShell() {
         <div className="desktop-page-header"><p className="page-label">OPERAÇÃO ENEM 2026</p><div className="page-header-line"><h1>{activeTitle}</h1><span className="online-state">{online ? <><i className="status-dot" /> Sincronizado com sua conta</> : <><i className="status-dot offline-dot" /> Sem conexão</>}</span></div></div>
         {!online && <div className="offline-banner" role="status">Sem internet. O cronograma e seu progresso não ficam armazenados no aparelho; conecte-se para carregar e salvar.</div>}
         {error && <div className="alert alert-error" role="alert">{error}</div>}
-        <div className="page-content"><Suspense fallback={<LoadingState label="Abrindo esta área…" />}><Routes><Route path="/" element={<TodayPage />} /><Route path="/cronograma" element={<SchedulePage />} /><Route path="/aulas" element={<LessonsPage />} /><Route path="/redacao" element={<EssayPage />} /><Route path="/materiais" element={<MaterialsPage />} /><Route path="*" element={<TodayPage />} /></Routes></Suspense></div>
+        <div className="page-content"><Suspense fallback={<LoadingState label="Abrindo esta área…" />}><Routes><Route path="/" element={<TodayPage />} /><Route path="/cronograma" element={<SchedulePage />} /><Route path="/aulas" element={<LessonsPage />} /><Route path="/redacao" element={<EssayPage />} /><Route path="/materiais" element={<MaterialsPage />} /><Route path="/tarefas" element={<TasksPage />} /><Route path="*" element={<TodayPage />} /></Routes></Suspense></div>
         <footer className="app-footer">Seu cronograma. Seu ritmo. <span>O progresso é privado e sincronizado na sua conta.</span></footer>
       </main>
-      <nav className="bottom-nav" inert={menuOpen} aria-label="Navegação inferior">{links.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} onClick={() => setMenuOpen(false)} className={({ isActive }) => `bottom-link ${isActive ? 'active' : ''}`}><Icon size={19} strokeWidth={1.8} /><span>{label === 'Materiais e erros' ? 'Materiais' : label}</span></NavLink>)}</nav>
+      <nav className="bottom-nav" inert={menuOpen} aria-label="Navegação inferior">{bottomLinks.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} onClick={() => setMenuOpen(false)} className={({ isActive }) => `bottom-link ${isActive ? 'active' : ''}`}><Icon size={19} strokeWidth={1.8} /><span>{label === 'Materiais e erros' ? 'Materiais' : label}</span></NavLink>)}</nav>
     </div>
   );
 }
