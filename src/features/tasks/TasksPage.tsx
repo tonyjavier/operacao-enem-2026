@@ -76,7 +76,7 @@ export function TasksPage() {
       requireOnline();
       const { data, error: updateError } = await getSupabase()
         .from('user_personal_tasks')
-        .update({ is_completed: !task.is_completed, completed_at: task.is_completed ? null : new Date().toISOString() })
+        .update({ is_completed: !task.is_completed })
         .eq('id', task.id)
         .select('*')
         .single();
