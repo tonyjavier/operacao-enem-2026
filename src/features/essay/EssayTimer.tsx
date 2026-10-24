@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Maximize2, Pause, Play, RotateCcw, Square, X } from 'lucide-react';
 import { Button } from '../../components/UI';
 import { nextPomodoroPhase, timerSeconds } from './timer';
@@ -122,7 +123,7 @@ export function EssayTimer() {
         {!running ? <Button type="button" variant="secondary" onClick={start}>{finished ? <RotateCcw size={15} /> : <Play size={15} />}{finished ? 'Recomeçar' : 'Iniciar cronômetro'}</Button> : <Button type="button" onClick={() => setFullScreen(true)}><Maximize2 size={15} />Voltar ao timer</Button>}
       </div>
 
-      {fullScreen && <div className="essay-focus-screen" role="dialog" aria-modal="true" aria-labelledby="essay-focus-title">
+      {fullScreen && createPortal(<div className="essay-focus-screen" role="dialog" aria-modal="true" aria-labelledby="essay-focus-title">
         <button ref={closeRef} type="button" className="essay-focus-minimize" onClick={() => setFullScreen(false)} aria-label="Minimizar cronômetro"><X size={20} /><span>Minimizar</span></button>
         <div className="essay-focus-content">
           <p className="essay-focus-kicker" id="essay-focus-title">{mode === 'pomodoro' ? `Pomodoro · ${phaseLabel}` : phaseLabel}</p>
@@ -134,7 +135,7 @@ export function EssayTimer() {
             <Button type="button" onClick={stop}><Square size={15} />Encerrar</Button>
           </div>}
         </div>
-      </div>}
+      </div>, document.body)}
     </>
   );
 }
