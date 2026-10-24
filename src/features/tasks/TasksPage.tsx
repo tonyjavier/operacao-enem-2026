@@ -42,7 +42,7 @@ export function TasksPage() {
   }, []);
 
   const pendingTasks = useMemo(() => tasks.filter((task) => !task.is_completed), [tasks]);
-  const completedTasks = useMemo(() => tasks.filter((task) => task.is_completed), [tasks]);
+  const completedTasks = useMemo(() => tasks.filter((task) => task.is_completed).sort((a, b) => Date.parse(b.completed_at ?? b.created_at) - Date.parse(a.completed_at ?? a.created_at)), [tasks]);
 
   async function addTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,7 +76,7 @@ export function TasksPage() {
       requireOnline();
       const { data, error: updateError } = await getSupabase()
         .from('user_personal_tasks')
-        .update({ is_completed: !task.is_completed })
+        .update({ is_completed: !task.is_completed, completed_at: task.is_completed ? null : new Date().toISOString() })
         .eq('id', task.id)
         .select('*')
         .single();
@@ -123,7 +123,10 @@ export function TasksPage() {
         {pendingTasks.length === 0 ? <EmptyState title="Tudo em dia" description="Quando lembrar de algo, anote acima e ele aparecerá aqui." /> : <div className="personal-task-list">{pendingTasks.map((task) => <TaskRow key={task.id} task={task} online={online} onToggle={() => void toggleTask(task)} onDelete={() => void deleteTask(task)} />)}</div>}
       </section>
 
-      {completedTasks.length > 0 && <details className="completed-tasks"><summary>Concluídas ({completedTasks.length})</summary><div className="personal-task-list">{completedTasks.map((task) => <TaskRow key={task.id} task={task} online={online} onToggle={() => void toggleTask(task)} onDelete={() => void deleteTask(task)} />)}</div></details>}
+      <section className="section-block task-history-section">
+        <div className="section-heading"><div><h3>Histórico de tarefas</h3><p>O que você já marcou como feito.</p></div><StatusTag>{completedTasks.length}</StatusTag></div>
+        {completedTasks.length === 0 ? <EmptyState title="Nenhuma tarefa concluída ainda" description="As tarefas confirmadas como feitas vão aparecer aqui." /> : <div className="personal-task-list">{completedTasks.map((task) => <TaskRow key={task.id} task={task} online={online} onToggle={() => void toggleTask(task)} onDelete={() => void deleteTask(task)} />)}</div>}
+      </section>
 
       <section className="section-block essay-outline-section">
         <div className="section-heading"><div><h3>Estrutura de redação</h3><p>Um roteiro para organizar suas ideias antes de escrever.</p></div><BookOpen size={19} /></div>
@@ -143,11 +146,16 @@ export function TasksPage() {
 function TaskRow({ task, online, onToggle, onDelete }: { task: UserPersonalTask; online: boolean; onToggle: () => void; onDelete: () => void }) {
   return (
     <article className={`personal-task-row${task.is_completed ? ' is-completed' : ''}`}>
-      <button type="button" className="task-check" onClick={onToggle} disabled={!online} aria-label={task.is_completed ? `Reabrir tarefa ${task.title}` : `Concluir tarefa ${task.title}`}>
+      <button type="button" className="task-check" onClick={onToggle} disabled={!online} aria-label={task.is_completed ? `Reabrir tarefa ${task.title}` : `Concluir tarefa ${task.title}`} aria-pressed={task.is_completed}>
         {task.is_completed && <Check size={16} />}
       </button>
-      <div className="personal-task-copy"><h4>{task.title}</h4>{task.details && <p>{task.details}</p>}{task.due_on && <span>Prazo: {formatDate(task.due_on)}</span>}</div>
+      <div className="personal-task-copy"><h4>{task.title}</h4>{task.details && <p>{task.details}</p>}{task.due_on && <span>Prazo: {formatDate(task.due_on)}</span>}{task.is_completed && <span>Concluída em {formatCompletedAt(task.completed_at)}</span>}</div>
       <button type="button" className="task-delete" onClick={onDelete} disabled={!online} aria-label={`Apagar tarefa ${task.title}`}><Trash2 size={16} /></button>
     </article>
   );
+}
+
+function formatCompletedAt(value: string | null) {
+  if (!value) return 'data indisponível';
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Cuiaba' }).format(new Date(value));
 }

@@ -8,17 +8,17 @@
 .personal-task-row{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid #dedede}
 .personal-task-row:last-child{border-bottom:0}
 .task-check,.task-delete{width:44px;height:44px;display:grid;place-items:center;border:1px solid #cfcfcf;border-radius:13px;background:#fff;color:#222}
+.task-check{border-radius:50%}
+.task-check:focus-visible,.task-delete:focus-visible{outline:3px solid #666;outline-offset:2px}
 .task-check:disabled,.task-delete:disabled{opacity:.5}
 .task-check:not(:disabled),.task-delete:not(:disabled){cursor:pointer}
-.task-check:has(svg){background:#111;border-color:#111;color:#fff}
+.task-check[aria-pressed="true"]{background:#111;border-color:#111;color:#fff}
 .task-delete{border-color:transparent;color:#666}
 .personal-task-copy{min-width:0}
 .personal-task-copy h4{margin:0;font-size:14px;line-height:1.4}
 .personal-task-copy p{margin:4px 0 0;color:#5e5e5e;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .personal-task-copy>span{display:block;margin-top:5px;color:#666;font-size:12px}
 .personal-task-row.is-completed .personal-task-copy h4{text-decoration:line-through;color:#777}
-.completed-tasks summary{min-height:44px;display:flex;align-items:center;color:#555;font-size:13px;font-weight:650;cursor:pointer}
-.completed-tasks[open] summary{margin-bottom:8px}
 .outline-guide{display:grid;gap:0;padding:16px 18px;border-radius:20px}
 .outline-guide article{display:grid;grid-template-columns:34px minmax(0,1fr);gap:11px;padding:13px 0;border-bottom:1px solid #e3e3e3}
 .outline-guide article>span{font-size:12px;font-weight:750;color:#666;font-variant-numeric:tabular-nums}
